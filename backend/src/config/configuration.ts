@@ -1,8 +1,14 @@
 const configuredMongoUri = process.env.MONGODB_URI?.trim() ?? '';
+const configuredFrontendUrl = process.env.FRONTEND_URL?.trim() ?? 'http://localhost:3000';
+const configuredFrontendUrls = (process.env.FRONTEND_URLS ?? '')
+  .split(',')
+  .map((url) => url.trim())
+  .filter(Boolean);
 
 export default () => ({
   port: Number(process.env.PORT ?? 4000),
-  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+  frontendUrl: configuredFrontendUrl,
+  allowedFrontendUrls: Array.from(new Set([configuredFrontendUrl, ...configuredFrontendUrls])),
   database: {
     uri: configuredMongoUri,
     useInMemory: process.env.USE_IN_MEMORY_DB === 'true' || configuredMongoUri.length === 0

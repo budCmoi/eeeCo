@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/frontend/server.js",
+    "start": "node scripts/start-production.js",
     "lint": "next lint"
   },
   "dependencies": {

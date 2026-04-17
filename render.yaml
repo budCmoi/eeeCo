@@ -3,12 +3,12 @@ previews:
 
 services:
   - type: web
-    name: eeeco-frontend
+    name: eeeco
     runtime: node
     plan: free
     rootDir: frontend
     buildCommand: npm install --include=dev && npm run build
-    startCommand: node .next/standalone/frontend/server.js
+    startCommand: node scripts/start-production.js
     autoDeployTrigger: commit
     healthCheckPath: /
     envVars:
@@ -17,7 +17,7 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: https://eeeco-backend.onrender.com/api
       - key: NEXT_PUBLIC_FRONTEND_URL
-        value: https://eeeco-frontend.onrender.com
+        value: https://eeeco.onrender.com
       - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
         sync: false
 
@@ -34,7 +34,9 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: FRONTEND_URL
-        value: https://eeeco-frontend.onrender.com
+        value: https://eeeco.onrender.com
+      - key: FRONTEND_URLS
+        value: https://eeeco.onrender.com,https://eeeco-frontend.onrender.com
       - key: MONGODB_URI
         sync: false
       - key: USE_IN_MEMORY_DB
@@ -52,9 +54,9 @@ services:
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_SUCCESS_URL
-        value: https://eeeco-frontend.onrender.com/account?payment=success
+        value: https://eeeco.onrender.com/account?payment=success
       - key: STRIPE_CANCEL_URL
-        value: https://eeeco-frontend.onrender.com/checkout
+        value: https://eeeco.onrender.com/checkout
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

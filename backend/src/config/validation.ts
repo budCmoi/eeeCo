@@ -3,6 +3,7 @@ import * as Joi from 'joi';
 export const validationSchema = Joi.object({
   PORT: Joi.number().default(4000),
   FRONTEND_URL: Joi.string().uri().default('http://localhost:3000'),
+  FRONTEND_URLS: Joi.string().allow('').optional(),
   MONGODB_URI: Joi.string().allow('').optional(),
   USE_IN_MEMORY_DB: Joi.boolean().truthy('true').falsy('false').default(false),
   JWT_SECRET: Joi.string().min(16).default('change-this-secret-before-production'),

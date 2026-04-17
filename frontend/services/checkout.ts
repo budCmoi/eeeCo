@@ -8,13 +8,21 @@ export type CheckoutPayload = {
   address: Address;
 };
 
+function getFrontendUrl() {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  return FRONTEND_URL;
+}
+
 export async function createCheckoutSession(payload: CheckoutPayload) {
   try {
     const { data } = await api.post('/payments/checkout-session', payload);
     return data;
   } catch {
     return {
-      url: `${FRONTEND_URL}/account?payment=demo-success`,
+      url: `${getFrontendUrl()}/account?payment=demo-success`,
       mode: 'demo'
     };
   }

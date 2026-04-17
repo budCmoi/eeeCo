@@ -7,8 +7,8 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
-    "start": "cd frontend && node .next/standalone/frontend/server.js",
-    "start:frontend": "cd frontend && node .next/standalone/frontend/server.js",
+    "start": "cd frontend && node scripts/start-production.js",
+    "start:frontend": "cd frontend && node scripts/start-production.js",
     "start:backend": "node backend/dist/main.js",
     "build": "npm run build --workspace frontend && npm run build --workspace backend",
     "lint": "npm run lint --workspace frontend && npm run lint --workspace backend"
