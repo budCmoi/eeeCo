@@ -8,7 +8,7 @@ services:
     plan: free
     rootDir: frontend
     buildCommand: npm install --include=dev && npm run build
-    startCommand: npm run start
+    startCommand: node .next/standalone/frontend/server.js
     autoDeployTrigger: commit
     healthCheckPath: /
     envVars:
