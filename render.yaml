@@ -1,0 +1,63 @@
+previews:
+  generation: off
+
+services:
+  - type: web
+    name: eeeco-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start
+    autoDeployTrigger: commit
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://eeeco-backend.onrender.com/api
+      - key: NEXT_PUBLIC_FRONTEND_URL
+        value: https://eeeco-frontend.onrender.com
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+
+  - type: web
+    name: eeeco-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start
+    autoDeployTrigger: commit
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: FRONTEND_URL
+        value: https://eeeco-frontend.onrender.com
+      - key: MONGODB_URI
+        sync: false
+      - key: USE_IN_MEMORY_DB
+        value: "false"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://eeeco-backend.onrender.com/api/auth/google/callback
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_SUCCESS_URL
+        value: https://eeeco-frontend.onrender.com/account?payment=success
+      - key: STRIPE_CANCEL_URL
+        value: https://eeeco-frontend.onrender.com/checkout
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
