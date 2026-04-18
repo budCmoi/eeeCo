@@ -3,6 +3,7 @@ const { existsSync } = require('node:fs');
 const { resolve } = require('node:path');
 
 const projectRoot = process.cwd();
+const bindHost = process.env.HOST ?? process.env.BIND_HOST ?? '0.0.0.0';
 const standaloneCandidates = [
   resolve(projectRoot, '.next', 'standalone', 'frontend', 'server.js'),
   resolve(projectRoot, '.next', 'standalone', 'server.js')
@@ -13,7 +14,11 @@ const standaloneEntry = standaloneCandidates.find((entryPath) => existsSync(entr
 function spawnServer(command, args) {
   return spawn(command, args, {
     cwd: projectRoot,
-    env: process.env,
+    env: {
+      ...process.env,
+      HOST: bindHost,
+      HOSTNAME: bindHost
+    },
     stdio: 'inherit'
   });
 }

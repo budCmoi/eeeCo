@@ -16,6 +16,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: HOSTNAME
+        value: 0.0.0.0
       - key: NEXT_PUBLIC_API_URL
         value: https://eeeco-backend.onrender.com/api
       - key: NEXT_PUBLIC_FRONTEND_URL
