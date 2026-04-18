@@ -1,3 +1,5 @@
+version: "1"
+
 previews:
   generation: off
 
@@ -27,6 +29,7 @@ services:
     plan: free
     rootDir: backend
     buildCommand: npm install --include=dev && npm run build
+    preDeployCommand: npm run db:migrate:deploy
     startCommand: npm run start
     autoDeployTrigger: commit
     healthCheckPath: /api/health
@@ -37,10 +40,10 @@ services:
         value: https://eeeco.onrender.com
       - key: FRONTEND_URLS
         value: https://eeeco.onrender.com,https://eeeco-frontend.onrender.com
-      - key: MONGODB_URI
-        sync: false
-      - key: USE_IN_MEMORY_DB
-        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eeeco-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -63,3 +66,11 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+
+databases:
+  - name: eeeco-db
+    databaseName: eeeco
+    user: eeeco_user
+    plan: free
+    postgresMajorVersion: "18"
+    ipAllowList: []

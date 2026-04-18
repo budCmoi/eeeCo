@@ -20,7 +20,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard('google'))
   @Get('google/callback')
-  googleCallback(@Req() request: { user: { _id: { toString(): string }; email: string; role: 'admin' | 'user'; name: string } }, @Res() response: Response) {
+  googleCallback(@Req() request: { user: { id?: string; _id?: string; email: string; role: 'admin' | 'user'; name: string } }, @Res() response: Response) {
     const frontendUrl = this.configService.get<string>('frontendUrl') ?? 'http://localhost:3000';
     const { accessToken, user } = this.authService.login(request.user);
     const query = new URLSearchParams({

@@ -1,4 +1,5 @@
-const configuredMongoUri = process.env.MONGODB_URI?.trim() ?? '';
+const defaultDatabaseUrl = 'postgresql://postgres:postgres@127.0.0.1:5432/eeeco?schema=public';
+const configuredDatabaseUrl = process.env.DATABASE_URL?.trim() || defaultDatabaseUrl;
 const configuredFrontendUrl = process.env.FRONTEND_URL?.trim() ?? 'http://localhost:3000';
 const configuredFrontendUrls = (process.env.FRONTEND_URLS ?? '')
   .split(',')
@@ -10,8 +11,7 @@ export default () => ({
   frontendUrl: configuredFrontendUrl,
   allowedFrontendUrls: Array.from(new Set([configuredFrontendUrl, ...configuredFrontendUrls])),
   database: {
-    uri: configuredMongoUri,
-    useInMemory: process.env.USE_IN_MEMORY_DB === 'true' || configuredMongoUri.length === 0
+    url: configuredDatabaseUrl
   },
   jwt: {
     secret: process.env.JWT_SECRET ?? 'change-this-secret-before-production',

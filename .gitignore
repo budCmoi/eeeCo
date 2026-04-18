@@ -12,3 +12,5 @@ yarn-error.log*
 pnpm-debug.log*
 frontend/.next
 backend/dist
+*.tsbuildinfo
+.tmp-*.log

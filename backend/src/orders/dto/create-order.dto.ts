@@ -9,10 +9,22 @@ import {
   ValidateNested
 } from 'class-validator';
 
-export class OrderItemDto {
+class OrderProductImageDto {
+  @IsString()
+  src: string;
+
+  @IsString()
+  alt: string;
+}
+
+class OrderProductSnapshotDto {
   @IsOptional()
   @IsString()
-  productId?: string;
+  id?: string;
+
+  @IsOptional()
+  @IsString()
+  _id?: string;
 
   @IsString()
   slug: string;
@@ -20,6 +32,66 @@ export class OrderItemDto {
   @IsString()
   name: string;
 
+  @IsString()
+  category: string;
+
+  @IsString()
+  collection: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  price: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  originalPrice?: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  sizes: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  colors: string[];
+
+  @IsString()
+  description: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  details: string[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderProductImageDto)
+  images: OrderProductImageDto[];
+
+  @IsOptional()
+  featured?: boolean;
+
+  @IsOptional()
+  newArrival?: boolean;
+
+  @Type(() => Number)
+  @IsNumber()
+  inventory: number;
+}
+
+export class OrderItemDto {
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @IsString()
+  slug: string;
+
+  @IsOptional()
+  @IsString()
+  name: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   price: number;
@@ -34,6 +106,11 @@ export class OrderItemDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrderProductSnapshotDto)
+  product?: OrderProductSnapshotDto;
 }
 
 export class AddressDto {

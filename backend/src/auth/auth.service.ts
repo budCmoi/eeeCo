@@ -23,8 +23,8 @@ export class AuthService {
     });
   }
 
-  login(user: { id?: string; _id?: { toString(): string }; email: string; role: 'admin' | 'user'; name: string }) {
-    const subject = user.id ?? user._id?.toString() ?? '';
+  login(user: { id?: string; _id?: string; email: string; role: 'admin' | 'user'; name: string }) {
+    const subject = user.id ?? user._id ?? '';
     const accessToken = this.jwtService.sign({
       sub: subject,
       email: user.email,

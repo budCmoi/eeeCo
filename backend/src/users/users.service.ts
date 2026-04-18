@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 
-import { User, UserDocument } from '@/users/schemas/user.schema';
+import { PrismaService } from '@/prisma/prisma.service';
+import { serializeUser } from '@/prisma/prisma-mappers';
 
 type GoogleUserPayload = {
   googleId: string;
@@ -13,36 +12,53 @@ type GoogleUserPayload = {
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<UserDocument>) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async upsertGoogleUser(payload: GoogleUserPayload) {
-    const existingUser = await this.userModel.findOne({ $or: [{ googleId: payload.googleId }, { email: payload.email }] });
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ googleId: payload.googleId }, { email: payload.email }]
+      }
+    });
 
     if (existingUser) {
-      existingUser.googleId = payload.googleId;
-      existingUser.name = payload.name;
-      existingUser.avatar = payload.avatar;
-      await existingUser.save();
-      return existingUser;
+      const updatedUser = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          googleId: payload.googleId,
+          name: payload.name,
+          avatar: payload.avatar
+        }
+      });
+
+      return serializeUser(updatedUser);
     }
 
-    return this.userModel.create({
-      ...payload,
-      role: payload.email.includes('admin') ? 'admin' : 'user'
+    const createdUser = await this.prisma.user.create({
+      data: {
+        ...payload,
+        role: payload.email.includes('admin') ? 'admin' : 'user'
+      }
     });
+
+    return serializeUser(createdUser);
   }
 
   async findById(id: string) {
-    const user = await this.userModel.findById(id);
+    const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return serializeUser(user);
   }
 
-  findAll() {
-    return this.userModel.find().sort({ createdAt: -1 });
+  async findAll() {
+    const users = await this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return users.map(serializeUser);
   }
 }

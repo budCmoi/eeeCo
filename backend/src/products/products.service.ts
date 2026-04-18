@@ -1,116 +1,165 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, Types } from 'mongoose';
+import { Prisma } from '@prisma/client';
 
 import { CreateProductDto } from '@/products/dto/create-product.dto';
 import { seedProducts } from '@/products/products.seed';
 import { UpdateProductDto } from '@/products/dto/update-product.dto';
-import { Product, ProductDocument } from '@/products/schemas/product.schema';
+import { isUuid, serializeProduct } from '@/prisma/prisma-mappers';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
 export class ProductsService implements OnModuleInit {
-  constructor(@InjectModel(Product.name) private readonly productModel: Model<ProductDocument>) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
-    const productCount = await this.productModel.estimatedDocumentCount();
+    const productCount = await this.prisma.product.count();
 
     if (productCount > 0) {
       return;
     }
 
-    await this.productModel.insertMany(seedProducts);
+    await this.prisma.$transaction(
+      seedProducts.map((product) =>
+        this.prisma.product.create({
+          data: {
+            ...product,
+            images: product.images as unknown as Prisma.InputJsonValue,
+            featured: product.featured ?? false,
+            newArrival: product.newArrival ?? false
+          }
+        })
+      )
+    );
   }
 
   async findAll(query: Record<string, string | undefined>) {
-    const filter: FilterQuery<ProductDocument> = {};
+    const where: Prisma.ProductWhereInput = {};
 
     if (query.category) {
-      filter.category = query.category;
+      where.category = query.category;
     }
 
     if (query.size) {
-      filter.sizes = query.size;
+      where.sizes = { has: query.size };
     }
 
     if (query.search) {
-      filter.$or = [
-        { name: { $regex: query.search, $options: 'i' } },
-        { collection: { $regex: query.search, $options: 'i' } },
-        { category: { $regex: query.search, $options: 'i' } }
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { collection: { contains: query.search, mode: 'insensitive' } },
+        { category: { contains: query.search, mode: 'insensitive' } }
       ];
     }
 
     const minPrice = query.minPrice ? Number(query.minPrice) : undefined;
     const maxPrice = query.maxPrice ? Number(query.maxPrice) : undefined;
 
-    if (typeof minPrice === 'number' || typeof maxPrice === 'number') {
-      filter.price = {};
+    if (Number.isFinite(minPrice) || Number.isFinite(maxPrice)) {
+      where.price = {};
 
-      if (typeof minPrice === 'number') {
-        filter.price.$gte = minPrice;
+      if (Number.isFinite(minPrice)) {
+        where.price.gte = minPrice;
       }
 
-      if (typeof maxPrice === 'number') {
-        filter.price.$lte = maxPrice;
+      if (Number.isFinite(maxPrice)) {
+        where.price.lte = maxPrice;
       }
     }
 
-    const request = this.productModel.find(filter);
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] = [];
 
     switch (query.sort) {
       case 'price-asc':
-        request.sort({ price: 1 });
+        orderBy.push({ price: 'asc' });
         break;
       case 'price-desc':
-        request.sort({ price: -1 });
+        orderBy.push({ price: 'desc' });
         break;
       case 'newest':
-        request.sort({ createdAt: -1, newArrival: -1 });
+        orderBy.push({ createdAt: 'desc' }, { newArrival: 'desc' });
         break;
       default:
-        request.sort({ featured: -1, createdAt: -1 });
+        orderBy.push({ featured: 'desc' }, { createdAt: 'desc' });
         break;
     }
 
+    const items = await this.prisma.product.findMany({ where, orderBy });
+
     return {
-      items: await request.exec()
+      items: items.map(serializeProduct)
     };
   }
 
   async findOne(idOrSlug: string) {
-    const query = Types.ObjectId.isValid(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
-    const product = await this.productModel.findOne(query);
+    const product = await this.findUniqueProduct(idOrSlug);
 
     if (!product) {
       throw new NotFoundException('Product not found');
     }
 
-    return product;
+    return serializeProduct(product);
   }
 
-  create(dto: CreateProductDto) {
-    return this.productModel.create(dto);
+  async create(dto: CreateProductDto) {
+    const product = await this.prisma.product.create({
+      data: {
+        ...dto,
+        images: dto.images as unknown as Prisma.InputJsonValue,
+        featured: dto.featured ?? false,
+        newArrival: dto.newArrival ?? false
+      }
+    });
+
+    return serializeProduct(product);
   }
 
   async update(idOrSlug: string, dto: UpdateProductDto) {
-    const query = Types.ObjectId.isValid(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
-    const product = await this.productModel.findOneAndUpdate(query, dto, { new: true });
+    const existingProduct = await this.findUniqueProduct(idOrSlug);
 
-    if (!product) {
+    if (!existingProduct) {
       throw new NotFoundException('Product not found');
     }
 
-    return product;
+    const product = await this.prisma.product.update({
+      where: { id: existingProduct.id },
+      data: {
+        ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.category !== undefined ? { category: dto.category } : {}),
+        ...(dto.collection !== undefined ? { collection: dto.collection } : {}),
+        ...(dto.price !== undefined ? { price: dto.price } : {}),
+        ...(dto.originalPrice !== undefined ? { originalPrice: dto.originalPrice } : {}),
+        ...(dto.sizes !== undefined ? { sizes: dto.sizes } : {}),
+        ...(dto.colors !== undefined ? { colors: dto.colors } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.details !== undefined ? { details: dto.details } : {}),
+        ...(dto.images !== undefined ? { images: dto.images as unknown as Prisma.InputJsonValue } : {}),
+        ...(dto.featured !== undefined ? { featured: dto.featured } : {}),
+        ...(dto.newArrival !== undefined ? { newArrival: dto.newArrival } : {}),
+        ...(dto.inventory !== undefined ? { inventory: dto.inventory } : {})
+      }
+    });
+
+    return serializeProduct(product);
   }
 
   async remove(idOrSlug: string) {
-    const query = Types.ObjectId.isValid(idOrSlug) ? { _id: idOrSlug } : { slug: idOrSlug };
-    const deleted = await this.productModel.findOneAndDelete(query);
+    const existingProduct = await this.findUniqueProduct(idOrSlug);
 
-    if (!deleted) {
+    if (!existingProduct) {
       throw new NotFoundException('Product not found');
     }
 
+    await this.prisma.product.delete({ where: { id: existingProduct.id } });
+
     return { deleted: true };
+  }
+
+  private findUniqueProduct(idOrSlug: string) {
+    if (isUuid(idOrSlug)) {
+      return this.prisma.product.findUnique({ where: { id: idOrSlug } });
+    }
+
+    return this.prisma.product.findUnique({ where: { slug: idOrSlug } });
   }
 }

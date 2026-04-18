@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
 import { CreateCheckoutSessionDto } from '@/payments/dto/create-checkout-session.dto';
+import { hasCompleteOrderItems, normalizeCheckoutItems } from '@/prisma/prisma-mappers';
 
 @Injectable()
 export class PaymentsService {
@@ -15,6 +16,11 @@ export class PaymentsService {
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto) {
     const frontendUrl = this.configService.get<string>('frontendUrl') ?? 'http://localhost:3000';
+    const items = normalizeCheckoutItems(dto.items);
+
+    if (!hasCompleteOrderItems(items)) {
+      throw new BadRequestException('Invalid checkout items');
+    }
 
     if (!this.stripe) {
       return {
@@ -35,7 +41,7 @@ export class PaymentsService {
       shipping_address_collection: {
         allowed_countries: ['US', 'GB', 'FR', 'DE', 'AE']
       },
-      line_items: dto.items.map((item) => ({
+      line_items: items.map((item) => ({
         quantity: item.quantity,
         price_data: {
           currency: 'usd',

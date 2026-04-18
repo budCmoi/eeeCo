@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum OrderStatus {
+  processing
+  paid
+  shipped
+  delivered
+}
+
+enum PaymentStatus {
+  pending
+  paid
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  email     String    @unique
+  googleId  String?   @unique
+  avatar    String?
+  role      UserRole  @default(user)
+  orders    Order[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id            String   @id @default(uuid()) @db.Uuid
+  slug          String   @unique
+  name          String
+  category      String
+  collection    String
+  price         Float
+  originalPrice Float?
+  sizes         String[]
+  colors        String[]
+  description   String
+  details       String[]
+  images        Json
+  featured      Boolean  @default(false)
+  newArrival    Boolean  @default(false)
+  inventory     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Order {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @db.Uuid
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           Json
+  address         Json
+  subtotal        Float
+  shipping        Float
+  total           Float
+  status          OrderStatus   @default(processing)
+  paymentStatus   PaymentStatus @default(pending)
+  stripeSessionId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([paymentStatus])
+}
