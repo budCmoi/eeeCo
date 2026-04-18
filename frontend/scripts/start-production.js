@@ -1,6 +1,6 @@
 const { spawn } = require('node:child_process');
-const { existsSync } = require('node:fs');
-const { resolve } = require('node:path');
+const { cpSync, existsSync } = require('node:fs');
+const { dirname, resolve } = require('node:path');
 
 const projectRoot = process.cwd();
 const bindHost = process.env.HOST ?? process.env.BIND_HOST ?? '0.0.0.0';
@@ -10,6 +10,28 @@ const standaloneCandidates = [
 ];
 
 const standaloneEntry = standaloneCandidates.find((entryPath) => existsSync(entryPath));
+
+function ensureStandaloneArtifacts(entryPath) {
+  const standaloneRoot = dirname(entryPath);
+  const staticSource = resolve(projectRoot, '.next', 'static');
+  const staticTarget = resolve(standaloneRoot, '.next', 'static');
+  const publicSource = resolve(projectRoot, 'public');
+  const publicTarget = resolve(standaloneRoot, 'public');
+
+  if (existsSync(staticSource)) {
+    cpSync(staticSource, staticTarget, {
+      recursive: true,
+      force: true
+    });
+  }
+
+  if (existsSync(publicSource)) {
+    cpSync(publicSource, publicTarget, {
+      recursive: true,
+      force: true
+    });
+  }
+}
 
 function spawnServer(command, args) {
   return spawn(command, args, {
@@ -24,7 +46,10 @@ function spawnServer(command, args) {
 }
 
 const childProcess = standaloneEntry
-  ? spawnServer(process.execPath, [standaloneEntry])
+  ? (() => {
+      ensureStandaloneArtifacts(standaloneEntry);
+      return spawnServer(process.execPath, [standaloneEntry]);
+    })()
   : (() => {
       const nextBinary = require.resolve('next/dist/bin/next', {
         paths: [projectRoot, __dirname]
