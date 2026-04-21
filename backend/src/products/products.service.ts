@@ -35,7 +35,7 @@ export class ProductsService implements OnModuleInit {
         create: {
           slug: typed.slug,
           name: typed.name,
-          categoryName: typed.categoryName ?? typed.category ?? 'General',
+          categoryName: typed.category ?? 'General',
           collection: typed.collection ?? null,
           price: typed.price,
           originalPrice: typed.originalPrice ?? null,
@@ -82,8 +82,12 @@ export class ProductsService implements OnModuleInit {
 
     if (Number.isFinite(minPrice) || Number.isFinite(maxPrice)) {
       where.price = {};
-      if (Number.isFinite(minPrice)) (where.price as Record<string, number>).gte = minPrice;
-      if (Number.isFinite(maxPrice)) (where.price as Record<string, number>).lte = maxPrice;
+      if (Number.isFinite(minPrice)) {
+        (where.price as Record<string, number>).gte = minPrice as number;
+      }
+      if (Number.isFinite(maxPrice)) {
+        (where.price as Record<string, number>).lte = maxPrice as number;
+      }
     }
 
     if (query.delivery) {

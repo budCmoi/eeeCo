@@ -295,7 +295,7 @@ export function serializeUser(user: {
 
 export function serializeOrder(order: {
   id: string;
-  items: unknown;
+  items?: unknown;
   address: unknown;
   subtotal: number;
   shipping: number;
@@ -311,7 +311,7 @@ export function serializeOrder(order: {
     _id: order.id,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
-    items: parseStoredOrderItems(order.items).map((item) => ({
+    items: parseStoredOrderItems(order.items ?? []).map((item) => ({
       product: item.product,
       quantity: item.quantity,
       size: item.size

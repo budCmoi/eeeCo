@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateOrderDto } from '@/orders/dto/create-order.dto';
 import {
   hasCompleteOrderItems,
+  isUuid,
   normalizeCheckoutItems,
   normalizeOrderAddress,
   serializeOrder
@@ -26,10 +27,23 @@ export class OrdersService {
       throw new BadRequestException('Invalid order items');
     }
 
+    const orderItems = items.map((item) => {
+      if (!item.productId || !isUuid(item.productId)) {
+        throw new BadRequestException('Invalid product in order items');
+      }
+
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        size: item.size,
+        price: item.price
+      };
+    });
+
     const order = await this.prisma.order.create({
       data: {
         userId,
-        items,
+        items: { create: orderItems },
         address: normalizeOrderAddress(dto.address),
         subtotal: dto.subtotal,
         shipping: dto.shipping,

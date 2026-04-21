@@ -78,8 +78,4 @@ export class CreateProductDto {
   @Type(() => Number)
   @IsNumber()
   deliveryDays?: number;
-
-  @IsOptional()
-  @IsString()
-  collection?: string;
 }
