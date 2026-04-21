@@ -3,12 +3,19 @@ export type ProductImage = {
   alt: string;
 };
 
+export type Seller = {
+  id: string;
+  name: string;
+  avatar?: string;
+};
+
 export type Product = {
   _id: string;
   slug: string;
   name: string;
   category: string;
-  collection: string;
+  categorySlug?: string;
+  collection?: string;
   price: number;
   originalPrice?: number;
   sizes: string[];
@@ -19,6 +26,8 @@ export type Product = {
   featured?: boolean;
   newArrival?: boolean;
   inventory: number;
+  deliveryDays?: number;
+  seller?: Seller;
 };
 
 export type CartItem = {
@@ -39,7 +48,7 @@ export type Address = {
   postalCode: string;
 };
 
-export type OrderStatus = 'processing' | 'paid' | 'shipped' | 'delivered';
+export type OrderStatus = 'processing' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
 
 export type Order = {
   _id: string;
@@ -57,6 +66,18 @@ export type UserProfile = {
   email: string;
   avatar?: string;
   role: 'user' | 'admin';
+  bio?: string;
+  phone?: string;
+  isSeller?: boolean;
+};
+
+export type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  imageUrl?: string;
+  _count?: { products: number };
 };
 
 export type ProductFilters = {
@@ -66,4 +87,22 @@ export type ProductFilters = {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
+  delivery?: number;
+};
+
+export type Message = {
+  id: string;
+  content: string;
+  senderId: string;
+  sender: { id: string; name: string; avatar?: string };
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type Conversation = {
+  id: string;
+  subject?: string;
+  participants: { id: string; name: string; avatar?: string; email: string }[];
+  lastMessage?: Message | null;
+  lastMessageAt?: string;
 };

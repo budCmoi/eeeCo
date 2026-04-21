@@ -224,25 +224,50 @@ export function serializeProduct(product: {
   id: string;
   slug: string;
   name: string;
-  category: string;
-  collection: string;
+  categoryName: string;
+  collection?: string | null;
   price: number;
   originalPrice: number | null;
   sizes: string[];
   colors: string[];
   description: string;
   details: string[];
-  images: unknown;
+  images?: Array<{ src: string; alt: string | null }>;
   featured: boolean;
   newArrival: boolean;
   inventory: number;
+  deliveryDays?: number;
+  sellerId?: string | null;
+  seller?: { id: string; name: string; avatar: string | null } | null;
+  category?: { name: string; slug: string } | null;
 }) {
-  return buildProductSnapshot({
-    ...product,
+  return {
+    id: product.id,
     _id: product.id,
+    slug: product.slug,
+    name: product.name,
+    category: product.categoryName,
+    collection: product.collection ?? '',
+    price: product.price,
     originalPrice: product.originalPrice ?? undefined,
-    images: product.images
-  });
+    sizes: product.sizes,
+    colors: product.colors,
+    description: product.description,
+    details: product.details,
+    images: (product.images ?? []).map((img) => ({ src: img.src, alt: img.alt ?? product.name })),
+    featured: product.featured,
+    newArrival: product.newArrival,
+    inventory: product.inventory,
+    deliveryDays: product.deliveryDays ?? 5,
+    seller: product.seller
+      ? {
+          id: product.seller.id,
+          name: product.seller.name,
+          avatar: product.seller.avatar ?? undefined
+        }
+      : undefined,
+    categorySlug: product.category?.slug
+  };
 }
 
 export function serializeUser(user: {
@@ -251,6 +276,9 @@ export function serializeUser(user: {
   email: string;
   avatar: string | null;
   role: 'user' | 'admin';
+  bio?: string | null;
+  phone?: string | null;
+  isSeller?: boolean;
 }) {
   return {
     id: user.id,
@@ -258,7 +286,10 @@ export function serializeUser(user: {
     name: user.name,
     email: user.email,
     avatar: user.avatar ?? undefined,
-    role: user.role
+    role: user.role,
+    bio: user.bio ?? undefined,
+    phone: user.phone ?? undefined,
+    isSeller: user.isSeller ?? false
   };
 }
 

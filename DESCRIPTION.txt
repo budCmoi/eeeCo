@@ -1,0 +1,107 @@
+EEECO — Marketplace Premium Mode & Lifestyle
+=============================================
+
+DESCRIPTION DU PROJET
+----------------------
+EEECO est une marketplace e-commerce moderne dédiée à la mode et au lifestyle. La plateforme
+permet à des particuliers et des vendeurs professionnels d'acheter et de vendre des vêtements,
+chaussures et accessoires en toute sécurité, avec une expérience utilisateur soignée et des
+animations fluides de niveau premium.
+
+Le projet a été conçu pour démontrer des compétences techniques avancées sur l'ensemble du stack,
+de la conception de la base de données jusqu'au déploiement en production, avec un niveau de qualité
+équivalent à un produit startup réel.
+
+
+FONCTIONNALITÉS PRINCIPALES
+-----------------------------
+- Page d'accueil dynamique avec produits vedettes, catégories et hero animé (GSAP + Framer Motion)
+- Boutique complète avec recherche en temps réel, filtres par prix, délai de livraison et catégorie
+- Fiche produit détaillée : galerie images, infos vendeur, suggestions de produits, bouton "Contacter"
+- Panier interactif avec calcul dynamique et checkout intégré via Stripe
+- Messagerie acheteur↔vendeur : création de conversation automatique, historique complet
+- Profil utilisateur : infos modifiables, accès aux commandes, discussions, bouton "Vendre"
+- Formulaire de vente : titre, catégorie, prix, photos (upload), tailles, couleurs, délai de livraison
+- Chatbot intégré avec FAQ contextuelle et suggestions interactives
+- Authentification complète : inscription email/password + connexion Google OAuth2 (JWT sécurisé)
+- Tracking analytics avec Google Analytics 4 (events : page_view, add_to_cart, contact)
+- Interface 100% responsive : mobile, tablette et desktop
+
+
+TECHNOLOGIES UTILISÉES
+-----------------------
+Frontend :
+  - Next.js 15 (React, SSR/SSG, routing file-based)
+  - TypeScript (typage strict)
+  - Tailwind CSS (styling utility-first, thème personnalisé)
+  - Framer Motion (animations UI)
+  - GSAP + ScrollTrigger (animations scroll)
+  - Zustand (state management panier et auth)
+  - Lenis (smooth scroll 60fps)
+  - Axios (client HTTP)
+
+Backend :
+  - NestJS 10 (architecture modulaire Node.js)
+  - TypeScript
+  - Prisma 6 (ORM avec migrations)
+  - PostgreSQL (base de données)
+  - JWT + Passport (authentification)
+  - bcrypt (hachage mots de passe)
+  - Cloudinary (stockage images)
+  - Stripe (paiements sécurisés)
+  - @nestjs/throttler (rate limiting)
+
+Déploiement :
+  - Vercel (frontend)
+  - Render / Railway (backend)
+
+
+ARCHITECTURE BASE DE DONNÉES
+-----------------------------
+9 modèles Prisma interconnectés :
+  User → Order → OrderItem → Product → ProductImage
+  User → Product (en tant que vendeur)
+  Product → Category
+  User → Conversation (via ConversationParticipant) → Message
+
+
+PROBLÉMATIQUES RÉSOLUES
+------------------------
+1. Séparation claire frontend/backend avec une API REST typée
+2. Gestion des images de produits via Cloudinary (stockage, CDN, optimisation)
+3. Messagerie bidirectionnelle sans serveur WebSocket (polling côté client)
+4. Authentification hybride locale + sociale avec un seul système JWT
+5. Filtrage produits multi-critères performant via Prisma avec index optimisés
+6. Animations haute performance (60fps) via GSAP et Lenis sans bloquer le thread principal
+7. Architecture scalable permettant l'ajout de nouvelles fonctionnalités sans refactoring majeur
+
+
+VALEUR DU PROJET
+-----------------
+Pour un utilisateur acheteur :
+  - Découverte rapide de pièces uniques avec des filtres précis
+  - Communication directe avec les vendeurs sans intermédiaire
+  - Paiement sécurisé et suivi des commandes
+
+Pour un utilisateur vendeur :
+  - Publication d'articles en moins de 3 minutes
+  - Gestion du catalogue personnel depuis le profil
+  - Messagerie intégrée pour répondre aux acheteurs potentiels
+
+Pour un recruteur technique :
+  - Architecture professionnelle et code maintenable
+  - Démonstration de maîtrise full-stack TypeScript
+  - Bonnes pratiques : validation, sécurité, performance, SEO
+  - Design premium qui démontre une sensibilité produit
+
+
+INSTALLATION RAPIDE
+--------------------
+1. git clone https://github.com/votre-user/eeeco.git && cd eeeco
+2. npm install
+3. Configurer backend/.env et frontend/.env.local
+4. cd backend && npm run db:migrate:dev -- --name init
+5. npm run dev (depuis la racine)
+
+Frontend : http://localhost:3000
+Backend  : http://localhost:4000

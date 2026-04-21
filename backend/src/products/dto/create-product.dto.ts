@@ -27,8 +27,9 @@ export class CreateProductDto {
   @IsString()
   category: string;
 
+  @IsOptional()
   @IsString()
-  collection: string;
+  collection?: string;
 
   @Type(() => Number)
   @IsNumber()
@@ -72,4 +73,13 @@ export class CreateProductDto {
   @Type(() => Number)
   @IsNumber()
   inventory: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  deliveryDays?: number;
+
+  @IsOptional()
+  @IsString()
+  collection?: string;
 }

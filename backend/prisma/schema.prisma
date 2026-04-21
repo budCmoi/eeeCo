@@ -17,50 +17,95 @@ enum OrderStatus {
   paid
   shipped
   delivered
+  cancelled
 }
 
 enum PaymentStatus {
   pending
   paid
+  refunded
 }
 
+// ─── User ────────────────────────────────────────────────────────────────────
 model User {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String
-  email     String    @unique
-  googleId  String?   @unique
-  avatar    String?
-  role      UserRole  @default(user)
-  orders    Order[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String         @id @default(uuid()) @db.Uuid
+  name         String
+  email        String         @unique
+  password     String?
+  googleId     String?        @unique
+  avatar       String?
+  bio          String?
+  phone        String?
+  isSeller     Boolean        @default(false)
+  role         UserRole       @default(user)
+  orders       Order[]
+  products     Product[]      @relation("SellerProducts")
+  sentMessages     Message[]  @relation("SentMessages")
+  conversations    ConversationParticipant[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([email])
 }
 
+// ─── Category ────────────────────────────────────────────────────────────────
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+// ─── Product ─────────────────────────────────────────────────────────────────
 model Product {
-  id            String   @id @default(uuid()) @db.Uuid
-  slug          String   @unique
+  id            String    @id @default(uuid()) @db.Uuid
+  slug          String    @unique
   name          String
-  category      String
-  collection    String
+  categoryId    String?   @db.Uuid
+  category      Category? @relation(fields: [categoryId], references: [id])
+  categoryName  String
+  collection    String?
   price         Float
   originalPrice Float?
   sizes         String[]
   colors        String[]
   description   String
   details       String[]
-  images        Json
-  featured      Boolean  @default(false)
-  newArrival    Boolean  @default(false)
-  inventory     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  images        ProductImage[]
+  featured      Boolean   @default(false)
+  newArrival    Boolean   @default(false)
+  inventory     Int       @default(0)
+  deliveryDays  Int       @default(5)
+  sellerId      String?   @db.Uuid
+  seller        User?     @relation("SellerProducts", fields: [sellerId], references: [id])
+  orderItems    OrderItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([featured, createdAt])
 }
 
+// ─── ProductImage ─────────────────────────────────────────────────────────────
+model ProductImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  src       String
+  alt       String?
+  position  Int      @default(0)
+  productId String   @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
 model Order {
   id              String        @id @default(uuid()) @db.Uuid
   userId          String        @db.Uuid
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           Json
+  items           OrderItem[]
   address         Json
   subtotal        Float
   shipping        Float
@@ -73,4 +118,59 @@ model Order {
 
   @@index([userId, createdAt])
   @@index([paymentStatus])
+}
+
+// ─── OrderItem ────────────────────────────────────────────────────────────────
+model OrderItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  orderId   String  @db.Uuid
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String  @db.Uuid
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  size      String?
+  price     Float
+
+  @@index([orderId])
+}
+
+// ─── Conversation ─────────────────────────────────────────────────────────────
+model Conversation {
+  id           String                    @id @default(uuid()) @db.Uuid
+  subject      String?
+  participants ConversationParticipant[]
+  messages     Message[]
+  lastMessageAt DateTime?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@index([lastMessageAt])
+}
+
+// ─── ConversationParticipant ──────────────────────────────────────────────────
+model ConversationParticipant {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String       @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+// ─── Message ──────────────────────────────────────────────────────────────────
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @db.Uuid
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

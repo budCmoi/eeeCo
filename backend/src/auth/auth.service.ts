@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Profile } from 'passport-google-oauth20';
+import * as bcrypt from 'bcrypt';
 
 import { UsersService } from '@/users/users.service';
 
@@ -21,6 +22,28 @@ export class AuthService {
       name: profile.displayName,
       avatar
     });
+  }
+
+  async register(name: string, email: string, password: string) {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = await this.usersService.createLocalUser({ name, email, password: hashedPassword });
+    return this.login(user);
+  }
+
+  async validateLocalUser(email: string, password: string) {
+    const user = await this.usersService.findByEmailWithPassword(email);
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    return user;
   }
 
   login(user: { id?: string; _id?: string; email: string; role: 'admin' | 'user'; name: string }) {
