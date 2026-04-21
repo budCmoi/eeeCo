@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { ArrowRight, ShieldCheck, Truck, Zap } from 'lucide-react';
 
 import { ProductCard } from '@/components/shop/ProductCard';
@@ -13,15 +13,20 @@ const fadeUp = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+    transition: { delay: i * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }
   })
-};
+} satisfies Variants;
 
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const displayCategories: Category[] =
+    categories.length > 0
+      ? categories
+      : Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: '—', slug: '', description: '' }));
 
   useEffect(() => {
     Promise.all([
@@ -138,10 +143,7 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {(categories.length > 0
-              ? categories
-              : Array.from({ length: 6 }, (_, i) => ({ id: String(i), name: '—', slug: '', description: '' }))
-            ).map((cat, i) => (
+            {displayCategories.map((cat, i) => (
               <motion.div
                 key={cat.id}
                 variants={fadeUp}

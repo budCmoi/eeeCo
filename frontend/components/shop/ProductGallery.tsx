@@ -26,9 +26,10 @@ type AnimeModule = typeof import('animejs');
 
 function buildImagePanels(product: Product): ImagePanel[] {
   return product.images.map((image, index) => {
+    const collectionLabel = product.collection ?? formatLabel(product.category);
     const primaryDetail = product.details[index] ?? product.details[0];
     const secondaryDetail = product.details[(index + 1) % product.details.length] ?? product.description;
-    const tertiaryDetail = product.details[(index + 2) % product.details.length] ?? product.collection;
+    const tertiaryDetail = product.details[(index + 2) % product.details.length] ?? collectionLabel;
 
     if (index === 0) {
       return {
@@ -36,7 +37,7 @@ function buildImagePanels(product: Product): ImagePanel[] {
         title: product.name,
         copy: `${product.description} This opening frame is meant to slow the reading of the garment down, so the shoulder line, length, and overall fall of the piece feel deliberate rather than simply functional. It sets the tone for the rest of the product story and gives the silhouette enough room to register properly on screen.`,
         metaLabel: 'Frame detail',
-        meta: product.collection,
+        meta: collectionLabel,
         detailLabel: 'Construction note',
         detail: `Built around ${primaryDetail.toLowerCase()}, finished with ${secondaryDetail.toLowerCase()}, and balanced by ${tertiaryDetail.toLowerCase()}, this first view focuses on structure before moving into texture and styling.`
       };

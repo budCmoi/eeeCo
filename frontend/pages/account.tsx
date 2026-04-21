@@ -12,7 +12,6 @@ import { useAuthStore } from '@/store/auth-store';
 import type { Order, UserProfile } from '@/types';
 
 type Tab = 'profile' | 'orders' | 'messages' | 'sell';
-type Tab = 'profile' | 'orders' | 'messages' | 'sell';
 
 export default function AccountPage() {
   const router = useRouter();
