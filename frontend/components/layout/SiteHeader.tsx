@@ -11,8 +11,7 @@ import { useAuthStore } from '@/store/auth-store';
 
 const baseLinks = [
   { href: '/', label: 'Accueil' },
-  { href: '/shop', label: 'Boutique' },
-  { href: '/account', label: 'Mon compte' }
+  { href: '/shop', label: 'Boutique' }
 ];
 
 export function SiteHeader() {
