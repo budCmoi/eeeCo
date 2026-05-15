@@ -26,71 +26,96 @@ enum PaymentStatus {
   refunded
 }
 
-// ─── User ────────────────────────────────────────────────────────────────────
+enum ProductStatus {
+  active
+  draft
+}
+
 model User {
-  id           String         @id @default(uuid()) @db.Uuid
-  name         String
-  email        String         @unique
-  password     String?
-  googleId     String?        @unique
-  avatar       String?
-  bio          String?
-  phone        String?
-  isSeller     Boolean        @default(false)
-  role         UserRole       @default(user)
-  orders       Order[]
-  products     Product[]      @relation("SellerProducts")
-  sentMessages     Message[]  @relation("SentMessages")
-  conversations    ConversationParticipant[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id             String          @id @default(uuid()) @db.Uuid
+  firstName      String          @default("")
+  lastName       String          @default("")
+  name           String
+  email          String          @unique
+  password       String?
+  googleId       String?         @unique
+  avatar         String?
+  phone          String?
+  role           UserRole        @default(user)
+  addresses      Address[]
+  paymentMethods PaymentMethod[]
+  orders         Order[]
+  product        Product?        @relation("OwnerProduct")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([email])
 }
 
-// ─── Category ────────────────────────────────────────────────────────────────
-model Category {
-  id          String    @id @default(uuid()) @db.Uuid
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  imageUrl    String?
-  products    Product[]
-  createdAt   DateTime  @default(now())
+model Address {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String   @default("Principale")
+  firstName  String
+  lastName   String
+  street     String
+  city       String
+  postalCode String
+  country    String   @default("France")
+  isDefault  Boolean  @default(false)
+  isBilling  Boolean  @default(false)
+  isShipping Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
-// ─── Product ─────────────────────────────────────────────────────────────────
+model PaymentMethod {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  label     String
+  brand     String?
+  last4     String?
+  expMonth  Int?
+  expYear   Int?
+  isDefault Boolean  @default(false)
+  isDemo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
 model Product {
-  id            String    @id @default(uuid()) @db.Uuid
-  slug          String    @unique
-  name          String
-  categoryId    String?   @db.Uuid
-  category      Category? @relation(fields: [categoryId], references: [id])
-  categoryName  String
-  collection    String?
-  price         Float
-  originalPrice Float?
-  sizes         String[]
-  colors        String[]
-  description   String
-  details       String[]
-  images        ProductImage[]
-  featured      Boolean   @default(false)
-  newArrival    Boolean   @default(false)
-  inventory     Int       @default(0)
-  deliveryDays  Int       @default(5)
-  sellerId      String?   @db.Uuid
-  seller        User?     @relation("SellerProducts", fields: [sellerId], references: [id])
-  orderItems    OrderItem[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String        @id @default(uuid()) @db.Uuid
+  slug             String        @unique
+  title            String
+  shortDescription String
+  longDescription  String        @db.Text
+  price            Float
+  compareAtPrice   Float?
+  stock            Int           @default(0)
+  mainImage        String
+  images           ProductImage[]
+  features         String[]
+  benefits         String[]
+  specifications   Json          @default("{}")
+  marketingText    String?       @db.Text
+  status           ProductStatus @default(draft)
+  isActive         Boolean       @default(false)
+  ownerId          String?       @unique @db.Uuid
+  owner            User?         @relation("OwnerProduct", fields: [ownerId], references: [id])
+  orderItems       OrderItem[]
+  reviews          Review[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  @@index([categoryId])
-  @@index([sellerId])
-  @@index([featured, createdAt])
+  @@index([isActive])
 }
 
-// ─── ProductImage ─────────────────────────────────────────────────────────────
 model ProductImage {
   id        String   @id @default(uuid()) @db.Uuid
   src       String
@@ -100,27 +125,41 @@ model ProductImage {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// ─── Order ────────────────────────────────────────────────────────────────────
-model Order {
-  id              String        @id @default(uuid()) @db.Uuid
-  userId          String        @db.Uuid
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           OrderItem[]
-  address         Json
-  subtotal        Float
-  shipping        Float
-  total           Float
-  status          OrderStatus   @default(processing)
-  paymentStatus   PaymentStatus @default(pending)
-  stripeSessionId String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+model Review {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  author    String
+  avatar    String?
+  rating    Int
+  comment   String
+  isDemo    Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  @@index([userId, createdAt])
-  @@index([paymentStatus])
+  @@index([productId])
 }
 
-// ─── OrderItem ────────────────────────────────────────────────────────────────
+model Order {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @db.Uuid
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+  address       Json
+  subtotal      Float
+  shipping      Float
+  discount      Float         @default(0)
+  total         Float
+  promoCode     String?
+  paymentMethod String        @default("demo")
+  status        OrderStatus   @default(processing)
+  paymentStatus PaymentStatus @default(pending)
+  isDemo        Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+}
+
 model OrderItem {
   id        String  @id @default(uuid()) @db.Uuid
   orderId   String  @db.Uuid
@@ -128,49 +167,19 @@ model OrderItem {
   productId String  @db.Uuid
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
-  size      String?
   price     Float
 
   @@index([orderId])
 }
 
-// ─── Conversation ─────────────────────────────────────────────────────────────
-model Conversation {
-  id           String                    @id @default(uuid()) @db.Uuid
-  subject      String?
-  participants ConversationParticipant[]
-  messages     Message[]
-  lastMessageAt DateTime?
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
+model ContactMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  @@index([lastMessageAt])
-}
-
-// ─── ConversationParticipant ──────────────────────────────────────────────────
-model ConversationParticipant {
-  id             String       @id @default(uuid()) @db.Uuid
-  conversationId String       @db.Uuid
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  userId         String       @db.Uuid
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  joinedAt       DateTime     @default(now())
-
-  @@unique([conversationId, userId])
-  @@index([userId])
-}
-
-// ─── Message ──────────────────────────────────────────────────────────────────
-model Message {
-  id             String       @id @default(uuid()) @db.Uuid
-  conversationId String       @db.Uuid
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String       @db.Uuid
-  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
-  content        String
-  readAt         DateTime?
-  createdAt      DateTime     @default(now())
-
-  @@index([conversationId, createdAt])
-  @@index([senderId])
+  @@index([createdAt])
 }

@@ -1,0 +1,192 @@
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Cormorant Garamond (Google Fonts fallback) ────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ─── Relicta Light (locale — à placer dans assets/fonts/) ─────────────────── */
+@font-face {
+  font-family: 'Relicta Light';
+  src: url('/assets/fonts/Relicta-Light.woff2') format('woff2'),
+       url('/assets/fonts/Relicta-Light.woff') format('woff'),
+       url('/assets/fonts/Relicta.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Relicta';
+  src: url('/assets/fonts/Relicta.woff2') format('woff2'),
+       url('/assets/fonts/Relicta.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+  }
+
+  body {
+    @apply bg-brand-dark text-brand-light font-sans;
+    overflow-x: hidden;
+    background-color: #080808;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Relicta Light', 'Relicta', 'Cormorant Garamond', Georgia, serif;
+    @apply tracking-wide leading-tight;
+  }
+
+  ::selection {
+    background: rgba(194, 200, 91, 0.25);
+    color: #F0EFE8;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #080808; }
+  ::-webkit-scrollbar-thumb {
+    background: #2C2C2C;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #5A5A5A; }
+
+  a { @apply transition-colors duration-200; }
+}
+
+/* ─── Components ────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Boutons ─────────────────────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-brand-accent text-brand-dark font-medium
+           px-7 py-2.5 rounded-full text-sm
+           transition-all duration-300
+           hover:bg-brand-accent-light hover:shadow-glow hover:scale-[1.02]
+           active:scale-[0.98] select-none cursor-pointer;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           border border-brand-accent/50 text-brand-accent font-medium
+           px-7 py-2.5 rounded-full text-sm
+           transition-all duration-300
+           hover:border-brand-accent hover:shadow-glow-sm
+           active:scale-[0.98] select-none cursor-pointer;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           text-brand-muted font-medium
+           px-4 py-2 rounded-full text-sm
+           transition-all duration-200
+           hover:text-brand-light hover:bg-brand-surface
+           active:scale-95 cursor-pointer;
+  }
+
+  .card-glass {
+    @apply bg-brand-card/60 backdrop-blur-sm
+           border border-brand-border rounded-2xl
+           transition-all duration-300
+           hover:border-brand-border-light hover:shadow-card-hover;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .input-field {
+    @apply w-full bg-brand-card border border-brand-border
+           text-brand-light placeholder-brand-muted
+           rounded-xl px-4 py-3 text-sm
+           transition-all duration-200
+           focus:outline-none focus:border-brand-accent/50 focus:ring-1 focus:ring-brand-accent/20;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+    letter-spacing: 0.08em;
+  }
+
+  .badge-accent {
+    @apply badge bg-brand-accent/10 text-brand-accent border border-brand-accent/25;
+  }
+
+  /* rétrocompatibilité */
+  .badge-yellow { @apply badge-accent; }
+
+  .badge-green {
+    @apply badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/25;
+  }
+
+  .section-title {
+    font-family: 'Relicta Light', 'Relicta', 'Cormorant Garamond', Georgia, serif;
+    @apply text-3xl md:text-4xl lg:text-5xl text-brand-light leading-tight;
+  }
+
+  .section-subtitle {
+    @apply text-brand-muted text-base md:text-lg leading-relaxed;
+  }
+
+  .label-upper {
+    @apply text-brand-muted text-xs uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-brand-border to-transparent my-8;
+  }
+
+  .scroll-reveal {
+    opacity: 0;
+    transform: translateY(35px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .glass {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 40px rgba(194, 200, 91, 0.4);
+  }
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+  .animation-delay-700 { animation-delay: 700ms; }
+
+  .text-gradient-accent {
+    background: linear-gradient(135deg, #C2C85B 0%, #D4DA6F 50%, #A8AE48 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* rétrocompatibilité */
+  .text-gradient-brand { @apply text-gradient-accent; }
+  .bg-gradient-brand { background: linear-gradient(135deg, #C2C85B 0%, #A8AE48 100%); }
+}

@@ -1,15 +1,18 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit
+} from '@nestjs/common';
 
 import { CreateProductDto } from '@/products/dto/create-product.dto';
-import { seedProducts } from '@/products/products.seed';
 import { UpdateProductDto } from '@/products/dto/update-product.dto';
-import { isUuid, serializeProduct } from '@/prisma/prisma-mappers';
 import { PrismaService } from '@/prisma/prisma.service';
 
 const productInclude = {
   images: { orderBy: { position: 'asc' as const } },
-  seller: { select: { id: true, name: true, avatar: true } },
-  category: { select: { name: true, slug: true } }
+  reviews: { orderBy: { createdAt: 'desc' as const } }
 };
 
 @Injectable()
@@ -17,197 +20,116 @@ export class ProductsService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit() {
-    const productCount = await this.prisma.product.count();
+    const count = await this.prisma.product.count();
+    if (count > 0) return;
 
-    if (productCount > 0) {
-      return;
-    }
-
-    for (const product of seedProducts) {
-      const typed = product as typeof product & {
-        category?: string;
-        images?: Array<{ src: string; alt: string }>;
-        deliveryDays?: number;
-      };
-      await this.prisma.product.upsert({
-        where: { slug: typed.slug },
-        update: {},
-        create: {
-          slug: typed.slug,
-          name: typed.name,
-          categoryName: typed.category ?? 'General',
-          collection: typed.collection ?? null,
-          price: typed.price,
-          originalPrice: typed.originalPrice ?? null,
-          sizes: typed.sizes,
-          colors: typed.colors,
-          description: typed.description,
-          details: typed.details,
-          featured: typed.featured ?? false,
-          newArrival: typed.newArrival ?? false,
-          inventory: typed.inventory ?? 0,
-          deliveryDays: typed.deliveryDays ?? 5,
-          images: typed.images
-            ? {
-                create: typed.images.map((img, index) => ({ src: img.src, alt: img.alt, position: index }))
-              }
-            : undefined
+    await this.prisma.product.create({
+      data: {
+        slug: 'aurora-essence',
+        title: 'Aurora Essence',
+        shortDescription: 'Le parfum qui redéfinit le luxe accessible.',
+        longDescription: "Aurora Essence est le fruit d'une quête d'excellence. Notes de tête : bergamote sicilienne, mandarine rose. Notes de coeur : rose de Damas, iris poudré, jasmin blanc. Notes de fond : bois de santal, ambre chaud, musc doux.",
+        price: 89.9,
+        compareAtPrice: 129.9,
+        stock: 47,
+        mainImage: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800',
+        features: ['Fragrance longue durée 12h', 'Flacon rechargeable premium', 'Sans parabènes', 'Cruelty-free & vegan', 'Fabriqué en France'],
+        benefits: ['Confiance instantanée', 'Signature olfactive unique', 'Emballage éco-responsable', 'Service client premium'],
+        specifications: { volume: '50 ml', concentration: 'Eau de Parfum 18%', famille: 'Florale-Orientale', origine: 'Grasse, France' },
+        marketingText: "Offrez-vous l'excellence. Aurora Essence, une fragrance pensée pour les esprits libres.",
+        status: 'active',
+        isActive: true,
+        images: {
+          create: [
+            { src: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=800', alt: 'Aurora Essence - Vue principale', position: 0 },
+            { src: 'https://images.unsplash.com/photo-1542295669297-4d352b042bca?w=800', alt: 'Aurora Essence - Flacon détail', position: 1 },
+            { src: 'https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800', alt: 'Aurora Essence - Ambiance', position: 2 },
+            { src: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800', alt: 'Aurora Essence - Lifestyle', position: 3 }
+          ]
+        },
+        reviews: {
+          create: [
+            { author: 'Sophie M.', avatar: 'https://i.pravatar.cc/100?img=1', rating: 5, comment: 'Un parfum absolument envoûtant. La tenue est incroyable.', isDemo: true },
+            { author: 'Lucas R.', avatar: 'https://i.pravatar.cc/100?img=3', rating: 5, comment: "Offert pour l'anniversaire de ma femme. Elle l'adore.", isDemo: true },
+            { author: 'Amira B.', avatar: 'https://i.pravatar.cc/100?img=5', rating: 4, comment: 'Magnifique, très élégant.', isDemo: true },
+            { author: 'Thomas L.', avatar: 'https://i.pravatar.cc/100?img=8', rating: 5, comment: 'Le rapport qualité-prix est imbattable.', isDemo: true }
+          ]
         }
-      });
-    }
+      }
+    });
   }
 
-  async findAll(query: Record<string, string | undefined>) {
-    const where: Record<string, unknown> = {};
-
-    if (query.category) {
-      where.categoryName = { equals: query.category, mode: 'insensitive' };
-    }
-
-    if (query.size) {
-      where.sizes = { has: query.size };
-    }
-
-    if (query.search) {
-      where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { collection: { contains: query.search, mode: 'insensitive' } },
-        { categoryName: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } }
-      ];
-    }
-
-    const minPrice = query.minPrice ? Number(query.minPrice) : undefined;
-    const maxPrice = query.maxPrice ? Number(query.maxPrice) : undefined;
-
-    if (Number.isFinite(minPrice) || Number.isFinite(maxPrice)) {
-      where.price = {};
-      if (Number.isFinite(minPrice)) {
-        (where.price as Record<string, number>).gte = minPrice as number;
-      }
-      if (Number.isFinite(maxPrice)) {
-        (where.price as Record<string, number>).lte = maxPrice as number;
-      }
-    }
-
-    if (query.delivery) {
-      where.deliveryDays = { lte: Number(query.delivery) };
-    }
-
-    const orderBy: Record<string, unknown>[] = [];
-    switch (query.sort) {
-      case 'price-asc':
-        orderBy.push({ price: 'asc' });
-        break;
-      case 'price-desc':
-        orderBy.push({ price: 'desc' });
-        break;
-      case 'newest':
-        orderBy.push({ createdAt: 'desc' }, { newArrival: 'desc' });
-        break;
-      default:
-        orderBy.push({ featured: 'desc' }, { createdAt: 'desc' });
-        break;
-    }
-
-    const items = await this.prisma.product.findMany({
-      where,
-      orderBy,
+  async findActive() {
+    const product = await this.prisma.product.findFirst({
+      where: { isActive: true },
       include: productInclude
     });
-
-    return { items: items.map(serializeProduct) };
+    if (!product) throw new NotFoundException('Aucun produit actif');
+    return product;
   }
 
-  async findOne(idOrSlug: string) {
-    const product = await this.findUniqueProduct(idOrSlug);
+  async findOne(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id }, include: productInclude });
+    if (!product) throw new NotFoundException('Produit introuvable');
+    return product;
+  }
 
-    if (!product) {
-      throw new NotFoundException('Product not found');
+  async create(dto: CreateProductDto, ownerId: string) {
+    const existing = await this.prisma.product.findFirst({ where: { isActive: true } });
+    if (existing) {
+      throw new ConflictException('Un produit actif existe déjà. Supprimez-le avant d\'en créer un nouveau.');
     }
 
-    return serializeProduct(product);
-  }
+    const { images, ...data } = dto as CreateProductDto & { images?: Array<{ src: string; alt?: string }> };
 
-  async create(dto: CreateProductDto, sellerId?: string) {
-    const { images, ...rest } = dto as typeof dto & { images?: Array<{ src: string; alt: string }> };
-
-    const product = await this.prisma.product.create({
+    return this.prisma.product.create({
       data: {
-        slug: rest.slug,
-        name: rest.name,
-        categoryName: rest.category,
-        collection: rest.collection ?? null,
-        price: rest.price,
-        originalPrice: rest.originalPrice ?? null,
-        sizes: rest.sizes,
-        colors: rest.colors,
-        description: rest.description,
-        details: rest.details,
-        featured: rest.featured ?? false,
-        newArrival: rest.newArrival ?? false,
-        inventory: rest.inventory ?? 0,
-        deliveryDays: rest.deliveryDays ?? 5,
-        sellerId: sellerId ?? null,
-        images: images
-          ? {
-              create: images.map((img, index) => ({ src: img.src, alt: img.alt, position: index }))
-            }
-          : undefined
+        slug: data.slug,
+        title: data.title,
+        shortDescription: data.shortDescription,
+        longDescription: data.longDescription,
+        price: data.price,
+        compareAtPrice: data.compareAtPrice,
+        stock: data.stock ?? 0,
+        mainImage: data.mainImage,
+        features: data.features ?? [],
+        benefits: data.benefits ?? [],
+        specifications: (data.specifications as object) ?? {},
+        marketingText: data.marketingText,
+        status: (data.status as 'active' | 'draft') ?? 'draft',
+        isActive: data.isActive ?? false,
+        ownerId,
+        images: images ? { create: images.map((img, i) => ({ src: img.src, alt: img.alt ?? '', position: i })) } : undefined
       },
       include: productInclude
     });
-
-    return serializeProduct(product);
   }
 
-  async update(idOrSlug: string, dto: UpdateProductDto) {
-    const existingProduct = await this.findUniqueProduct(idOrSlug);
+  async update(id: string, dto: UpdateProductDto, requesterId: string, requesterRole: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('Produit introuvable');
+    if (requesterRole !== 'admin' && product.ownerId !== requesterId) throw new ForbiddenException('Accès refusé');
 
-    if (!existingProduct) {
-      throw new NotFoundException('Product not found');
-    }
+    const { images, ...data } = dto as UpdateProductDto & { images?: Array<{ src: string; alt?: string }> };
 
-    const product = await this.prisma.product.update({
-      where: { id: existingProduct.id },
+    return this.prisma.product.update({
+      where: { id },
       data: {
-        ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
-        ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.category !== undefined ? { categoryName: dto.category } : {}),
-        ...(dto.collection !== undefined ? { collection: dto.collection } : {}),
-        ...(dto.price !== undefined ? { price: dto.price } : {}),
-        ...(dto.originalPrice !== undefined ? { originalPrice: dto.originalPrice } : {}),
-        ...(dto.sizes !== undefined ? { sizes: dto.sizes } : {}),
-        ...(dto.colors !== undefined ? { colors: dto.colors } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
-        ...(dto.details !== undefined ? { details: dto.details } : {}),
-        ...(dto.featured !== undefined ? { featured: dto.featured } : {}),
-        ...(dto.newArrival !== undefined ? { newArrival: dto.newArrival } : {}),
-        ...(dto.inventory !== undefined ? { inventory: dto.inventory } : {})
+        ...data,
+        specifications: data.specifications ? (data.specifications as object) : undefined,
+        ...(images !== undefined ? {
+          images: { deleteMany: {}, create: images.map((img, i) => ({ src: img.src, alt: img.alt ?? '', position: i })) }
+        } : {})
       },
       include: productInclude
     });
-
-    return serializeProduct(product);
   }
 
-  async remove(idOrSlug: string) {
-    const existingProduct = await this.findUniqueProduct(idOrSlug);
-
-    if (!existingProduct) {
-      throw new NotFoundException('Product not found');
-    }
-
-    await this.prisma.product.delete({ where: { id: existingProduct.id } });
-
-    return { deleted: true };
-  }
-
-  private findUniqueProduct(idOrSlug: string) {
-    if (isUuid(idOrSlug)) {
-      return this.prisma.product.findUnique({ where: { id: idOrSlug }, include: productInclude });
-    }
-
-    return this.prisma.product.findUnique({ where: { slug: idOrSlug }, include: productInclude });
+  async remove(id: string, requesterId: string, requesterRole: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('Produit introuvable');
+    if (requesterRole !== 'admin' && product.ownerId !== requesterId) throw new ForbiddenException('Accès refusé');
+    await this.prisma.product.delete({ where: { id } });
+    return { message: 'Produit supprimé avec succès' };
   }
 }

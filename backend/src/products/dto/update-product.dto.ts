@@ -1,83 +1,19 @@
-import {
-  IsArray,
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsString,
-  ValidateNested
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-class ProductImageDto {
-  @IsString()
-  src: string;
-
-  @IsString()
-  alt: string;
-}
+import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateProductDto {
-  @IsOptional()
-  @IsString()
-  slug?: string;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  category?: string;
-
-  @IsOptional()
-  @IsString()
-  collection?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  price?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  originalPrice?: number;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  sizes?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  colors?: string[];
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  details?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductImageDto)
-  images?: ProductImageDto[];
-
-  @IsOptional()
-  @IsBoolean()
-  featured?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  newArrival?: boolean;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  inventory?: number;
+  @IsString() @IsOptional() slug?: string;
+  @IsString() @IsOptional() title?: string;
+  @IsString() @IsOptional() shortDescription?: string;
+  @IsString() @IsOptional() longDescription?: string;
+  @IsNumber() @Min(0) @IsOptional() price?: number;
+  @IsNumber() @IsOptional() compareAtPrice?: number;
+  @IsNumber() @Min(0) @IsOptional() stock?: number;
+  @IsString() @IsOptional() mainImage?: string;
+  @IsArray() @IsOptional() images?: Array<{ src: string; alt?: string }>;
+  @IsArray() @IsOptional() features?: string[];
+  @IsArray() @IsOptional() benefits?: string[];
+  @IsObject() @IsOptional() specifications?: Record<string, string>;
+  @IsString() @IsOptional() marketingText?: string;
+  @IsBoolean() @IsOptional() isActive?: boolean;
+  @IsString() @IsOptional() status?: string;
 }

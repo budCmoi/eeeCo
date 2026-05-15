@@ -1,81 +1,19 @@
-import {
-  ArrayMinSize,
-  IsArray,
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsString,
-  ValidateNested
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-class ProductImageDto {
-  @IsString()
-  src: string;
-
-  @IsString()
-  alt: string;
-}
+import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateProductDto {
-  @IsString()
-  slug: string;
-
-  @IsString()
-  name: string;
-
-  @IsString()
-  category: string;
-
-  @IsOptional()
-  @IsString()
-  collection?: string;
-
-  @Type(() => Number)
-  @IsNumber()
-  price: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  originalPrice?: number;
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsString({ each: true })
-  sizes: string[];
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsString({ each: true })
-  colors: string[];
-
-  @IsString()
-  description: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  details: string[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductImageDto)
-  images: ProductImageDto[];
-
-  @IsOptional()
-  @IsBoolean()
-  featured?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  newArrival?: boolean;
-
-  @Type(() => Number)
-  @IsNumber()
-  inventory: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  deliveryDays?: number;
+  @IsString() slug!: string;
+  @IsString() title!: string;
+  @IsString() shortDescription!: string;
+  @IsString() longDescription!: string;
+  @IsNumber() @Min(0) price!: number;
+  @IsNumber() @IsOptional() compareAtPrice?: number;
+  @IsNumber() @Min(0) @IsOptional() stock?: number;
+  @IsString() mainImage!: string;
+  @IsArray() @IsOptional() images?: Array<{ src: string; alt?: string }>;
+  @IsArray() @IsOptional() features?: string[];
+  @IsArray() @IsOptional() benefits?: string[];
+  @IsObject() @IsOptional() specifications?: Record<string, string>;
+  @IsString() @IsOptional() marketingText?: string;
+  @IsBoolean() @IsOptional() isActive?: boolean;
+  @IsString() @IsOptional() status?: string;
 }

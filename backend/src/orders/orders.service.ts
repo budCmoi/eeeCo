@@ -1,14 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-
-import { CreateOrderDto } from '@/orders/dto/create-order.dto';
-import {
-  hasCompleteOrderItems,
-  isUuid,
-  normalizeCheckoutItems,
-  normalizeOrderAddress,
-  serializeOrder
-} from '@/prisma/prisma-mappers';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CreateOrderDto } from '@/orders/dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -16,74 +8,54 @@ export class OrdersService {
 
   async create(userId: string, dto: CreateOrderDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    const product = await this.prisma.product.findFirst({ where: { isActive: true } });
+    const shipping = dto.subtotal >= 80 ? 0 : 4.99;
+    const discount = dto.promoCode === 'AURORA10' ? dto.subtotal * 0.1 : 0;
+    const total = dto.subtotal + shipping - discount;
 
-    const items = normalizeCheckoutItems(dto.items);
-
-    if (!hasCompleteOrderItems(items)) {
-      throw new BadRequestException('Invalid order items');
-    }
-
-    const orderItems = items.map((item) => {
-      if (!item.productId || !isUuid(item.productId)) {
-        throw new BadRequestException('Invalid product in order items');
-      }
-
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        size: item.size,
-        price: item.price
-      };
-    });
-
-    const order = await this.prisma.order.create({
+    return this.prisma.order.create({
       data: {
         userId,
-        items: { create: orderItems },
-        address: normalizeOrderAddress(dto.address),
+        address: dto.address as object,
         subtotal: dto.subtotal,
-        shipping: dto.shipping,
-        total: dto.total,
-        paymentStatus: 'pending',
-        status: 'processing'
+        shipping,
+        discount,
+        total,
+        promoCode: dto.promoCode,
+        paymentMethod: dto.paymentMethod ?? 'demo',
+        status: 'processing',
+        paymentStatus: 'paid',
+        isDemo: true,
+        items: {
+          create: dto.items.map((item) => ({
+            productId: product?.id ?? item.productId,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        }
+      },
+      include: {
+        items: { include: { product: { select: { title: true, mainImage: true, slug: true } } } }
       }
     });
-
-    return serializeOrder(order);
   }
 
-  async findMyOrders(userId: string) {
-    const orders = await this.prisma.order.findMany({
+  async findForUser(userId: string) {
+    return this.prisma.order.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: { items: { include: { product: { select: { title: true, mainImage: true, slug: true } } } } }
     });
-
-    return orders.map(serializeOrder);
   }
 
-  async findAll() {
-    const orders = await this.prisma.order.findMany({
-      orderBy: { createdAt: 'desc' }
+  async findOne(id: string, userId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: { include: { product: true } } }
     });
-
-    return orders.map(serializeOrder);
-  }
-
-  async getOverview() {
-    const [ordersCount, paidOrders, revenueResult] = await Promise.all([
-      this.prisma.order.count(),
-      this.prisma.order.count({ where: { paymentStatus: 'paid' } }),
-      this.prisma.order.aggregate({ _sum: { total: true } })
-    ]);
-
-    return {
-      ordersCount,
-      paidOrders,
-      revenue: revenueResult._sum.total ?? 0
-    };
+    if (!order) throw new NotFoundException('Commande introuvable');
+    return order;
   }
 }
